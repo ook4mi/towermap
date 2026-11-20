@@ -27,7 +27,9 @@ def extract_ports(
                         binding.container_name,
                         binding.stack_name or "",
                         binding.host_ip,
+                        binding.comment or "",
                         "gluetun" if binding.via_gluetun else "",
+                        "host" if binding.host_network else "",
                     ]
                 ).lower()
                 if normalized_query not in haystack:

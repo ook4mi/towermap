@@ -18,6 +18,7 @@ def get_mock_containers() -> list[ContainerInfo]:
             container_name="gluetun",
             stack_name="media-vpn",
             via_gluetun=True,
+            comment="Gluetun HTTP Control Server",
         ),
         PortBinding(
             host_ip="0.0.0.0",
@@ -27,6 +28,7 @@ def get_mock_containers() -> list[ContainerInfo]:
             container_name="gluetun",
             stack_name="media-vpn",
             via_gluetun=True,
+            comment="qBittorrent WebUI",
         ),
         PortBinding(
             host_ip="0.0.0.0",
@@ -36,6 +38,7 @@ def get_mock_containers() -> list[ContainerInfo]:
             container_name="gluetun",
             stack_name="media-vpn",
             via_gluetun=True,
+            comment="Sonarr",
         ),
         PortBinding(
             host_ip="0.0.0.0",
@@ -45,6 +48,7 @@ def get_mock_containers() -> list[ContainerInfo]:
             container_name="gluetun",
             stack_name="media-vpn",
             via_gluetun=True,
+            comment="Radarr",
         ),
         PortBinding(
             host_ip="0.0.0.0",
@@ -54,6 +58,7 @@ def get_mock_containers() -> list[ContainerInfo]:
             container_name="gluetun",
             stack_name="media-vpn",
             via_gluetun=True,
+            comment="Prowlarr",
         ),
         PortBinding(
             host_ip="0.0.0.0",
@@ -63,6 +68,7 @@ def get_mock_containers() -> list[ContainerInfo]:
             container_name="gluetun",
             stack_name="media-vpn",
             via_gluetun=True,
+            comment="Bazarr",
         ),
         PortBinding(
             host_ip="0.0.0.0",
@@ -72,6 +78,7 @@ def get_mock_containers() -> list[ContainerInfo]:
             container_name="gluetun",
             stack_name="media-vpn",
             via_gluetun=True,
+            comment="Lidarr",
         ),
         PortBinding(
             host_ip="0.0.0.0",
@@ -81,6 +88,7 @@ def get_mock_containers() -> list[ContainerInfo]:
             container_name="gluetun",
             stack_name="media-vpn",
             via_gluetun=True,
+            comment="FlareSolverr",
         ),
     ]
 
@@ -434,6 +442,39 @@ def get_mock_containers() -> list[ContainerInfo]:
                 ),
             ],
         ),
+        # Stack: gitea (network_mode: host)
+        ContainerInfo(
+            id="f60708091006",
+            name="gitea",
+            image="gitea/gitea:latest",
+            stack_name="gitea",
+            service_name="gitea",
+            compose_file="/home/ook4mi/docker/gitea/compose.yaml",
+            state="running",
+            health="healthy",
+            started_at="2026-11-11T10:00:00Z",
+            network_mode="host",
+            ports=[
+                PortBinding(
+                    host_port=2222,
+                    container_port=2222,
+                    protocol="tcp",
+                    container_name="gitea",
+                    stack_name="gitea",
+                    host_network=True,
+                    comment="Gitea SSH (host network)",
+                ),
+                PortBinding(
+                    host_port=3005,
+                    container_port=3005,
+                    protocol="tcp",
+                    container_name="gitea",
+                    stack_name="gitea",
+                    host_network=True,
+                    comment="Gitea HTTP (host network)",
+                ),
+            ],
+        ),
         # Stack: towermap
         ContainerInfo(
             id="f60708091005",
@@ -474,6 +515,7 @@ def get_mock_dns_records(domain: str = "ook4mi.ovh") -> list[DnsRecord]:
     """Return mock Technitium DNS records under the configured zone."""
     return [
         DnsRecord(domain=f"towermap.{domain}", record_type="A", target="192.168.68.62"),
+        DnsRecord(domain=f"git.{domain}", record_type="A", target="192.168.68.62"),
         DnsRecord(domain=f"sonarr.{domain}", record_type="A", target="192.168.68.62"),
         DnsRecord(domain=f"radarr.{domain}", record_type="A", target="192.168.68.62"),
         DnsRecord(domain=f"prowlarr.{domain}", record_type="A", target="192.168.68.62"),
@@ -500,6 +542,14 @@ def get_mock_npm_proxy_hosts(domain: str = "ook4mi.ovh") -> list[NpmProxyHost]:
             forward_scheme="http",
             forward_host="192.168.68.62",
             forward_port=4010,
+            ssl_enabled=True,
+            enabled=True,
+        ),
+        NpmProxyHost(
+            domain_names=[f"git.{domain}"],
+            forward_scheme="http",
+            forward_host="192.168.68.62",
+            forward_port=3005,
             ssl_enabled=True,
             enabled=True,
         ),

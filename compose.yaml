@@ -1,8 +1,10 @@
-# Production reference Docker Compose file for tower (/home/ook4mi/docker/towermap/compose.yaml)
+# Production Docker Compose file for tower
+# Target path on tower: /home/ook4mi/docker/towermap/compose.yaml
+
 services:
   towermap:
     image: ghcr.io/ook4mi/towermap:latest
-    # Uncomment below to build locally instead of pulling from GHCR:
+    # Uncomment below to build directly from a local git clone instead of pulling from GHCR:
     # build: .
     container_name: towermap
     restart: unless-stopped
@@ -10,13 +12,20 @@ services:
       - "4010:8000"
     environment:
       - TZ=Europe/Paris
+      - APP_ENV=production
       - MOCK_MODE=false
+      - CACHE_TTL_SECONDS=15
       - DEFAULT_DOMAIN=ook4mi.ovh
+      - TOWER_HOST_IPS=192.168.68.62,127.0.0.1,localhost,tower
+      - SUGGEST_PORT_START=4010
+      - SUGGEST_PORT_END=4099
       - GLUETUN_URL=http://192.168.68.62:8000
       - NPM_URL=http://192.168.68.62:81
       - TECHNITIUM_URL=http://192.168.68.62:5380
     env_file:
-      - /home/ook4mi/appdata/towermap/.env
+      - path: /home/ook4mi/appdata/towermap/.env
+        required: false
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /home/ook4mi/docker:/home/ook4mi/docker:ro
       - /etc/localtime:/etc/localtime:ro

@@ -144,9 +144,9 @@ export function GluetunView({ gluetun, isLoading }: GluetunViewProps) {
       )}
 
       {/* Topology Grid: Attached Containers & Published Ports */}
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid gap-5 lg:grid-cols-2">
         {/* Attached Containers */}
-        <section className="overflow-hidden rounded-xl border border-slate-800/80 bg-slate-900/50 lg:col-span-2">
+        <section className="overflow-hidden rounded-xl border border-slate-800/80 bg-slate-900/50">
           <div className="flex items-center justify-between border-b border-slate-800/80 bg-slate-900/80 px-4 py-3">
             <div className="flex items-center gap-2">
               <Shield className="h-4 w-4 text-cyan-400" />
@@ -236,16 +236,28 @@ export function GluetunView({ gluetun, isLoading }: GluetunViewProps) {
             <div className="divide-y divide-slate-800/60">
               {gluetun.published_ports.map((port) => (
                 <div
-                  key={`${port.host_ip}-${port.host_port}-${port.protocol}`}
-                  className="flex items-center justify-between px-4 py-2.5 text-xs"
+                  key={`${port.host_ip}-${port.host_port}-${port.container_port}-${port.protocol}`}
+                  className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-xs transition hover:bg-slate-800/25"
                 >
-                  <span className="font-mono font-semibold text-cyan-300">
-                    :{port.host_port}
-                  </span>
-                  <span className="font-mono text-slate-400">
-                    → {port.container_port}/{port.protocol}
-                  </span>
-                  <span className="font-mono text-slate-500">{port.host_ip}</span>
+                  <div className="flex items-center gap-2.5 font-mono">
+                    <span className="min-w-[4.25rem] font-semibold text-cyan-300">
+                      :{port.host_port}
+                    </span>
+                    <span className="text-slate-400">
+                      → {port.container_port}/{port.protocol}
+                    </span>
+                    {port.host_ip !== "0.0.0.0" && (
+                      <span className="text-slate-500">({port.host_ip})</span>
+                    )}
+                  </div>
+                  {port.comment ? (
+                    <span className="font-mono text-xs text-slate-200">
+                      <span className="mr-1 text-slate-500">#</span>
+                      {port.comment}
+                    </span>
+                  ) : (
+                    <span className="text-slate-600">—</span>
+                  )}
                 </div>
               ))}
             </div>

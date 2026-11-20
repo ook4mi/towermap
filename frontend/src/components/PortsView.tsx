@@ -1,6 +1,7 @@
 import {
   ArrowUpDown,
   CheckCircle2,
+  Network,
   Search,
   Shield,
   Sparkles,
@@ -28,7 +29,7 @@ export function PortsView({ ports, isLoading }: PortsViewProps) {
 
   const [search, setSearch] = useState("");
   const [protocolFilter, setProtocolFilter] = useState<"all" | "tcp" | "udp">("all");
-  const [viaGluetunOnly, setViaGluetunOnly] = useState(false);
+  const [routingFilter, setRoutingFilter] = useState<"all" | "gluetun" | "host">("all");
   const [sortKey, setSortKey] = useState<SortKey>("host_port");
   const [sortAsc, setSortAsc] = useState(true);
 
@@ -47,14 +48,16 @@ export function PortsView({ ports, isLoading }: PortsViewProps) {
       if (protocolFilter !== "all" && p.protocol.toLowerCase() !== protocolFilter) {
         return false;
       }
-      if (viaGluetunOnly && !p.via_gluetun) return false;
+      if (routingFilter === "gluetun" && !p.via_gluetun) return false;
+      if (routingFilter === "host" && !p.host_network) return false;
       if (!q) return true;
       return (
         String(p.host_port).includes(q) ||
         String(p.container_port).includes(q) ||
         p.container_name.toLowerCase().includes(q) ||
         (p.stack_name ?? "").toLowerCase().includes(q) ||
-        p.host_ip.toLowerCase().includes(q)
+        p.host_ip.toLowerCase().includes(q) ||
+        (p.comment ?? "").toLowerCase().includes(q)
       );
     });
 
@@ -72,7 +75,7 @@ export function PortsView({ ports, isLoading }: PortsViewProps) {
       return sortAsc ? cmp : -cmp;
     });
     return list;
-  }, [ports, search, protocolFilter, viaGluetunOnly, sortKey, sortAsc]);
+  }, [ports, search, protocolFilter, routingFilter, sortKey, sortAsc]);
 
   return (
     <div className="space-y-5">
@@ -179,7 +182,7 @@ export function PortsView({ ports, isLoading }: PortsViewProps) {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Filter ports by number, container, stack, or IP..."
+            placeholder="Filter ports by number, container, stack, IP, or comment..."
             className="w-full rounded-lg border border-slate-700/80 bg-slate-950 py-2 pr-3 pl-9 text-sm text-slate-100 placeholder-slate-500 focus:border-sky-500 focus:outline-none"
           />
         </div>
@@ -201,15 +204,31 @@ export function PortsView({ ports, isLoading }: PortsViewProps) {
           ))}
           <button
             type="button"
-            onClick={() => setViaGluetunOnly((prev) => !prev)}
+            onClick={() =>
+              setRoutingFilter((prev) => (prev === "gluetun" ? "all" : "gluetun"))
+            }
             className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-              viaGluetunOnly
+              routingFilter === "gluetun"
                 ? "bg-cyan-500/20 text-cyan-300 ring-1 ring-cyan-500/40"
                 : "bg-slate-950 text-slate-400 ring-1 ring-slate-800 hover:text-slate-200"
             }`}
           >
             <Shield className="h-3.5 w-3.5" />
             <span>via gluetun</span>
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              setRoutingFilter((prev) => (prev === "host" ? "all" : "host"))
+            }
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+              routingFilter === "host"
+                ? "bg-indigo-500/20 text-indigo-300 ring-1 ring-indigo-500/40"
+                : "bg-slate-950 text-slate-400 ring-1 ring-slate-800 hover:text-slate-200"
+            }`}
+          >
+            <Network className="h-3.5 w-3.5" />
+            <span>host network</span>
           </button>
         </div>
       </div>
@@ -252,6 +271,7 @@ export function PortsView({ ports, isLoading }: PortsViewProps) {
                   />
                   <th className="px-4 py-3 font-medium">Host IP</th>
                   <th className="px-4 py-3 font-medium">Routing</th>
+                  <th className="px-4 py-3 font-medium">Comment</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
@@ -286,8 +306,23 @@ export function PortsView({ ports, isLoading }: PortsViewProps) {
                           <Shield className="h-3 w-3" />
                           via gluetun
                         </span>
+                      ) : binding.host_network ? (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-300 ring-1 ring-indigo-500/30">
+                          <Network className="h-3 w-3" />
+                          host network
+                        </span>
                       ) : (
                         <span className="text-xs text-slate-500">direct</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-slate-300">
+                      {binding.comment ? (
+                        <span>
+                          <span className="mr-1 text-slate-500">#</span>
+                          {binding.comment}
+                        </span>
+                      ) : (
+                        <span className="text-slate-600">—</span>
                       )}
                     </td>
                   </tr>

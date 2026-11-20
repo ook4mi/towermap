@@ -13,6 +13,8 @@ class PortBinding(BaseModel):
     container_name: str
     stack_name: str | None = None
     via_gluetun: bool = False
+    host_network: bool = False
+    comment: str | None = None
 
 
 class ContainerInfo(BaseModel):

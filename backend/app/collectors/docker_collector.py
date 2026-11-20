@@ -7,9 +7,49 @@ from typing import Any
 import docker
 from docker.errors import DockerException
 
+from app.collectors.compose_parser import ServiceComposeHints, load_compose_hints
 from app.models import ContainerInfo, PortBinding
 
 logger = logging.getLogger(__name__)
+
+# Exact environment variable names commonly used to configure a container's own listening port
+_LISTENING_PORT_ENV_KEYS = {
+    "PORT",
+    "HTTP_PORT",
+    "HTTPS_PORT",
+    "WEB_PORT",
+    "WEBUI_PORT",
+    "SERVER_PORT",
+    "LISTEN_PORT",
+    "APP_PORT",
+    "UI_PORT",
+    "API_PORT",
+    "SSH_PORT",
+    "SSH_LISTEN_PORT",
+    "METRICS_PORT",
+}
+
+# Suffixes that unambiguously denote a container's listening port (excluding DB/client ports)
+_LISTENING_PORT_ENV_SUFFIXES = (
+    "_LISTEN_PORT",
+    "__HTTP_PORT",
+    "__HTTPS_PORT",
+    "__SSH_PORT",
+    "__SSH_LISTEN_PORT",
+)
+
+_IGNORED_PORT_ENV_PREFIXES = (
+    "DB_",
+    "DATABASE_",
+    "POSTGRES_",
+    "MYSQL_",
+    "MARIADB_",
+    "REDIS_",
+    "SMTP_",
+    "MAIL_",
+    "LDAP_",
+    "PROXY_",
+)
 
 
 def parse_port_bindings(
@@ -18,6 +58,7 @@ def parse_port_bindings(
     container_name: str,
     stack_name: str | None,
     via_gluetun: bool,
+    compose_hints: ServiceComposeHints | None = None,
 ) -> list[PortBinding]:
     """Parse Docker NetworkSettings.Ports or HostConfig.PortBindings into PortBinding items."""
     if not raw_ports:
@@ -49,6 +90,11 @@ def parse_port_bindings(
             if dedupe_key in seen:
                 continue
             seen.add(dedupe_key)
+            comment = (
+                compose_hints.get_comment(host_port, protocol)
+                if compose_hints is not None
+                else None
+            )
             bindings.append(
                 PortBinding(
                     host_ip=host_ip,
@@ -58,10 +104,174 @@ def parse_port_bindings(
                     container_name=container_name,
                     stack_name=stack_name,
                     via_gluetun=via_gluetun,
+                    comment=comment,
                 )
             )
 
     return sorted(bindings, key=lambda item: (item.host_port, item.protocol, item.host_ip))
+
+
+def _parse_env_list(raw_env: list[str] | None) -> dict[str, str]:
+    env_map: dict[str, str] = {}
+    for entry in raw_env or []:
+        if "=" in entry:
+            key, value = entry.split("=", 1)
+            env_map[key.strip()] = value.strip()
+    return env_map
+
+
+def _parse_port_int(value: str | None) -> int | None:
+    if not value:
+        return None
+    try:
+        port = int(value.strip())
+    except ValueError:
+        return None
+    return port if 1 <= port <= 65535 else None
+
+
+def _parse_towermap_ports_label(raw_label: str | None) -> list[tuple[int, str, str | None]]:
+    """Parse optional `towermap.ports` label like `3000/tcp:Gitea Web,2222/tcp:Gitea SSH`."""
+    if not raw_label:
+        return []
+    entries: list[tuple[int, str, str | None]] = []
+    for item in raw_label.split(","):
+        token = item.strip()
+        if not token:
+            continue
+        comment: str | None = None
+        if ":" in token:
+            port_part, comment_part = token.split(":", 1)
+            comment = comment_part.strip() or None
+        else:
+            port_part = token
+        protocol = "tcp"
+        if "/" in port_part:
+            port_str, proto_str = port_part.split("/", 1)
+            proto_lower = proto_str.strip().lower()
+            if proto_lower in {"tcp", "udp"}:
+                protocol = proto_lower
+        else:
+            port_str = port_part
+        port_num = _parse_port_int(port_str)
+        if port_num is not None:
+            entries.append((port_num, protocol, comment))
+    return entries
+
+
+def extract_host_network_ports(
+    *,
+    config: dict[str, Any],
+    labels: dict[str, Any],
+    container_name: str,
+    stack_name: str | None,
+    compose_hints: ServiceComposeHints | None = None,
+) -> list[PortBinding]:
+    """Infer listening ports for `network_mode: host` containers (e.g. Gitea, Plex).
+
+    Combines:
+      1. Optional `towermap.ports` container label (highest precedence)
+      2. Listening-port environment variables (including Gitea `GITEA__server__*`)
+      3. Compose `expose:` entries (with YAML comments)
+      4. Docker `Config.ExposedPorts` (from Dockerfile EXPOSE / compose expose)
+    """
+    discovered: dict[tuple[int, str], str | None] = {}
+    env_map = _parse_env_list(config.get("Env"))
+    env_upper = {k.upper(): (k, v) for k, v in env_map.items()}
+
+    # Track default image exposed ports that were explicitly overridden/disabled by env vars
+    suppressed_exposed: set[tuple[int, str]] = set()
+
+    # 1. Explicit `towermap.ports` label
+    for port_num, proto, comment in _parse_towermap_ports_label(labels.get("towermap.ports")):
+        discovered[(port_num, proto)] = comment or "towermap.ports label"
+
+    # 2. Gitea-specific server env overrides (common with network_mode: host)
+    gitea_http = env_upper.get("GITEA__SERVER__HTTP_PORT")
+    if gitea_http:
+        orig_key, raw_val = gitea_http
+        port_num = _parse_port_int(raw_val)
+        if port_num is not None:
+            yaml_comment = compose_hints.env_comments.get(orig_key) if compose_hints else None
+            discovered.setdefault((port_num, "tcp"), yaml_comment or "Gitea HTTP (host network)")
+            if port_num != 3000:
+                suppressed_exposed.add((3000, "tcp"))
+
+    gitea_disable_ssh = env_upper.get("GITEA__SERVER__DISABLE_SSH")
+    ssh_disabled = bool(
+        gitea_disable_ssh and gitea_disable_ssh[1].strip().lower() in {"true", "1", "yes"}
+    )
+    if ssh_disabled:
+        suppressed_exposed.add((22, "tcp"))
+    else:
+        gitea_ssh = (
+            env_upper.get("GITEA__SERVER__SSH_LISTEN_PORT")
+            or env_upper.get("GITEA__SERVER__SSH_PORT")
+        )
+        if gitea_ssh:
+            orig_key, raw_val = gitea_ssh
+            port_num = _parse_port_int(raw_val)
+            if port_num is not None:
+                yaml_comment = compose_hints.env_comments.get(orig_key) if compose_hints else None
+                discovered.setdefault((port_num, "tcp"), yaml_comment or "Gitea SSH (host network)")
+                if port_num != 22:
+                    suppressed_exposed.add((22, "tcp"))
+
+    # 3. Generic listening-port env vars
+    for key_upper, (orig_key, raw_val) in env_upper.items():
+        if key_upper.startswith("GITEA__SERVER__"):
+            continue
+        if key_upper.startswith(_IGNORED_PORT_ENV_PREFIXES):
+            continue
+        if key_upper in _LISTENING_PORT_ENV_KEYS or key_upper.endswith(
+            _LISTENING_PORT_ENV_SUFFIXES
+        ):
+            port_num = _parse_port_int(raw_val)
+            if port_num is not None:
+                yaml_comment = compose_hints.env_comments.get(orig_key) if compose_hints else None
+                discovered.setdefault(
+                    (port_num, "tcp"),
+                    yaml_comment or f"Host network ({orig_key})",
+                )
+
+    # 4. Compose `expose:` entries
+    if compose_hints is not None:
+        for port_num, proto, comment in compose_hints.exposed_ports:
+            discovered.setdefault((port_num, proto), comment or "Host network (expose)")
+
+    # 5. Docker image / container `Config.ExposedPorts`
+    raw_exposed = config.get("ExposedPorts") or {}
+    for port_proto in raw_exposed:
+        parts = str(port_proto).split("/")
+        port_num = _parse_port_int(parts[0])
+        if port_num is None:
+            continue
+        proto = (parts[1] if len(parts) > 1 else "tcp").lower()
+        if (port_num, proto) in suppressed_exposed:
+            continue
+        yaml_comment = (
+            compose_hints.get_comment(port_num, proto) if compose_hints is not None else None
+        )
+        discovered.setdefault(
+            (port_num, proto),
+            yaml_comment or "Host network (EXPOSE)",
+        )
+
+    bindings = [
+        PortBinding(
+            host_ip="0.0.0.0",
+            host_port=port_num,
+            container_port=port_num,
+            protocol=proto,
+            container_name=container_name,
+            stack_name=stack_name,
+            via_gluetun=False,
+            host_network=True,
+            comment=comment,
+        )
+        for (port_num, proto), comment in discovered.items()
+    ]
+    return sorted(bindings, key=lambda item: (item.host_port, item.protocol))
 
 
 def is_gluetun_container(name: str, image: str, service_name: str | None) -> bool:
@@ -78,6 +288,8 @@ def is_gluetun_container(name: str, image: str, service_name: str | None) -> boo
 
 def parse_raw_containers(
     raw_attrs_list: list[dict[str, Any]],
+    *,
+    compose_hints_by_file: dict[str, dict[str, ServiceComposeHints]] | None = None,
 ) -> tuple[list[ContainerInfo], str | None]:
     """Convert raw Docker container inspect payloads into typed ContainerInfo models.
 
@@ -86,6 +298,9 @@ def parse_raw_containers(
     gluetun_full_id: str | None = None
     gluetun_names: set[str] = {"gluetun"}
     all_full_ids: set[str] = set()
+    file_hints_cache: dict[str, dict[str, ServiceComposeHints]] = (
+        dict(compose_hints_by_file) if compose_hints_by_file else {}
+    )
 
     for attrs in raw_attrs_list:
         full_id = str(attrs.get("Id", ""))
@@ -117,6 +332,14 @@ def parse_raw_containers(
         stack_name = labels.get("com.docker.compose.project")
         service_name = labels.get("com.docker.compose.service")
         compose_file = labels.get("com.docker.compose.project.config_files")
+
+        # Load compose YAML comments once per config_files string
+        service_hints: ServiceComposeHints | None = None
+        if compose_file:
+            if compose_file not in file_hints_cache:
+                file_hints_cache[compose_file] = load_compose_hints(compose_file)
+            hints_for_file = file_hints_cache[compose_file]
+            service_hints = hints_for_file.get(service_name or "") or hints_for_file.get(name)
 
         state = str(state_obj.get("Status") or "unknown").lower()
         health_obj = state_obj.get("Health")
@@ -152,7 +375,19 @@ def parse_raw_containers(
             container_name=name,
             stack_name=stack_name,
             via_gluetun=is_self_gluetun or gluetun_attached,
+            compose_hints=service_hints,
         )
+
+        # For `network_mode: host` containers (e.g. Gitea), Docker leaves Ports empty;
+        # infer ports from labels, listening-port env vars, compose expose, and image EXPOSE.
+        if network_mode.lower() == "host" and not ports:
+            ports = extract_host_network_ports(
+                config=config,
+                labels=labels,
+                container_name=name,
+                stack_name=stack_name,
+                compose_hints=service_hints,
+            )
 
         containers.append(
             ContainerInfo(
@@ -220,7 +455,7 @@ class DockerCollector:
             else docker.from_env()
         )
         try:
-            containers = client.containers.list(all=True)
+            containers = client.containers.list(all=True, ignore_removed=True)
             raw_attrs = [container.attrs for container in containers]
             return parse_raw_containers(raw_attrs)
         finally:

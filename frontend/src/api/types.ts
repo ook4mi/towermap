@@ -6,6 +6,8 @@ export interface PortBinding {
   container_name: string;
   stack_name: string | null;
   via_gluetun: boolean;
+  host_network: boolean;
+  comment: string | null;
 }
 
 export interface ContainerInfo {
