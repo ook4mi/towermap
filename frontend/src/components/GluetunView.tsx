@@ -9,6 +9,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import type { GluetunOverview } from "../api/types";
+import { deduplicatePorts, formatComposePort } from "../utils/formatPort";
 
 interface GluetunViewProps {
   gluetun: GluetunOverview | undefined;
@@ -233,34 +234,25 @@ export function GluetunView({ gluetun, isLoading }: GluetunViewProps) {
               No host ports published on gluetun.
             </div>
           ) : (
-            <div className="divide-y divide-slate-800/60">
-              {gluetun.published_ports.map((port) => (
-                <div
-                  key={`${port.host_ip}-${port.host_port}-${port.container_port}-${port.protocol}`}
-                  className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-xs transition hover:bg-slate-800/25"
+            <ul className="divide-y divide-slate-800/60 font-mono text-xs">
+              {deduplicatePorts(gluetun.published_ports).map((port) => (
+                <li
+                  key={`${port.host_port}-${port.container_port}-${port.protocol}`}
+                  className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-4 py-2.5 transition hover:bg-slate-800/25"
                 >
-                  <div className="flex items-center gap-2.5 font-mono">
-                    <span className="min-w-[4.25rem] font-semibold text-cyan-300">
-                      :{port.host_port}
-                    </span>
-                    <span className="text-slate-400">
-                      → {port.container_port}/{port.protocol}
-                    </span>
-                    {port.host_ip !== "0.0.0.0" && (
-                      <span className="text-slate-500">({port.host_ip})</span>
-                    )}
-                  </div>
-                  {port.comment ? (
-                    <span className="font-mono text-xs text-slate-200">
+                  <span className="select-none text-slate-500">-</span>
+                  <span className="font-semibold text-cyan-300">
+                    {formatComposePort(port)}
+                  </span>
+                  {port.comment && (
+                    <span className="text-slate-300">
                       <span className="mr-1 text-slate-500">#</span>
                       {port.comment}
                     </span>
-                  ) : (
-                    <span className="text-slate-600">—</span>
                   )}
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </section>
       </div>

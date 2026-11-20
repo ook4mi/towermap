@@ -8,9 +8,9 @@ from app.services.port_service import check_port_availability, extract_ports, fi
 def test_parse_port_bindings_extracts_and_deduplicates() -> None:
     raw_ports = {
         "80/tcp": [
-            {"HostIp": "0.0.0.0", "HostPort": "8080"},
-            {"HostIp": "0.0.0.0", "HostPort": "8080"},
             {"HostIp": "::", "HostPort": "8080"},
+            {"HostIp": "0.0.0.0", "HostPort": "8080"},
+            {"HostIp": "0.0.0.0", "HostPort": "8080"},
         ],
         "53/udp": [{"HostIp": "0.0.0.0", "HostPort": "53"}],
         "9000/tcp": None,
@@ -23,12 +23,13 @@ def test_parse_port_bindings_extracts_and_deduplicates() -> None:
         via_gluetun=False,
     )
 
-    assert len(bindings) == 3
+    assert len(bindings) == 2
     assert bindings[0].host_port == 53
     assert bindings[0].protocol == "udp"
     assert bindings[1].host_port == 8080
     assert bindings[1].container_port == 80
     assert bindings[1].protocol == "tcp"
+    assert bindings[1].host_ip == "0.0.0.0"
 
 
 def test_parse_raw_containers_marks_gluetun_ports_and_attachments() -> None:

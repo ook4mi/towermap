@@ -157,6 +157,7 @@ def parse_compose_text(text: str) -> dict[str, ServiceComposeHints]:
         long_port_comment = None
 
     for raw_line in text.splitlines():
+        raw_line = raw_line.replace("\t", "  ")
         if not raw_line.strip():
             # Blank line breaks group comment association
             group_comment = None

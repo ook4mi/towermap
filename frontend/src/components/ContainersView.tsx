@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { ContainerInfo, PortBinding } from "../api/types";
+import { deduplicatePorts, formatComposePort } from "../utils/formatPort";
 
 interface ContainersViewProps {
   containers: ContainerInfo[];
@@ -178,123 +179,78 @@ export function ContainersView({ containers, isLoading }: ContainersViewProps) {
 
 function ContainerRow({ container }: { container: ContainerInfo }) {
   const isHostNetwork = container.network_mode.toLowerCase() === "host";
-  const hasRichPorts =
-    container.ports.length > 3 ||
-    container.ports.some((p) => Boolean(p.comment) || p.via_gluetun || p.host_network);
+  const uniquePorts = useMemo(
+    () => deduplicatePorts(container.ports),
+    [container.ports],
+  );
 
   return (
     <div className="px-4 py-3.5 transition hover:bg-slate-800/20">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-sm font-medium text-slate-100">
-              {container.name}
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-sm font-medium text-slate-100">
+            {container.name}
+          </span>
+          <StateBadge state={container.state} />
+          {container.health && container.health !== "none" && (
+            <HealthBadge health={container.health} />
+          )}
+          {container.gluetun_attached && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-cyan-500/15 px-2 py-0.5 text-[11px] font-medium text-cyan-300 ring-1 ring-cyan-500/30">
+              <Shield className="h-3 w-3" />
+              via gluetun
             </span>
-            <StateBadge state={container.state} />
-            {container.health && container.health !== "none" && (
-              <HealthBadge health={container.health} />
-            )}
-            {container.gluetun_attached && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-cyan-500/15 px-2 py-0.5 text-[11px] font-medium text-cyan-300 ring-1 ring-cyan-500/30">
-                <Shield className="h-3 w-3" />
-                via gluetun
-              </span>
-            )}
-            {isHostNetwork && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-indigo-500/15 px-2 py-0.5 text-[11px] font-medium text-indigo-300 ring-1 ring-indigo-500/30">
-                <Network className="h-3 w-3" />
-                host network
-              </span>
-            )}
-          </div>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
-            <span className="truncate font-mono text-slate-400">
-              {container.image}
+          )}
+          {isHostNetwork && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-indigo-500/15 px-2 py-0.5 text-[11px] font-medium text-indigo-300 ring-1 ring-indigo-500/30">
+              <Network className="h-3 w-3" />
+              host network
             </span>
-            <span className="font-mono text-slate-500">id:{container.id}</span>
-          </div>
+          )}
         </div>
-
-        {/* Compact inline badges for simple 1–3 port containers without comments */}
-        {!hasRichPorts && (
-          <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
-            {container.ports.length === 0 ? (
-              <span className="text-xs text-slate-500">
-                {container.gluetun_attached
-                  ? "Ports published via gluetun"
-                  : "No host ports"}
-              </span>
-            ) : (
-              container.ports.map((port) => (
-                <span
-                  key={`${port.host_ip}-${port.host_port}-${port.protocol}`}
-                  className="inline-flex items-center gap-1 rounded-md bg-slate-950 px-2 py-0.5 font-mono text-xs text-slate-200 ring-1 ring-slate-700"
-                >
-                  :{port.host_port}
-                  <span className="text-slate-500">
-                    →{port.container_port}/{port.protocol}
-                  </span>
-                </span>
-              ))
-            )}
-          </div>
-        )}
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
+          <span className="truncate font-mono text-slate-400">
+            {container.image}
+          </span>
+          <span className="font-mono text-slate-500">id:{container.id}</span>
+        </div>
       </div>
 
-      {/* Vertical structured port list for Gluetun, host-network, or commented/many ports */}
-      {hasRichPorts && container.ports.length > 0 && (
-        <PortListBlock ports={container.ports} />
-      )}
+      {/* Ports list on following lines */}
+      {uniquePorts.length > 0 && <PortListBlock ports={uniquePorts} />}
     </div>
   );
 }
 
 function PortListBlock({ ports }: { ports: PortBinding[] }) {
   return (
-    <div className="mt-3 overflow-hidden rounded-lg border border-slate-800/80 bg-slate-950/60">
-      <div className="divide-y divide-slate-800/60">
-        {ports.map((port) => (
-          <div
-            key={`${port.host_ip}-${port.host_port}-${port.container_port}-${port.protocol}`}
-            className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-3 py-1.5 text-xs"
+    <ul className="mt-2.5 space-y-1 rounded-lg border border-slate-800/80 bg-slate-950/60 px-3 py-2 font-mono text-xs">
+      {ports.map((port) => (
+        <li
+          key={`${port.host_port}-${port.container_port}-${port.protocol}`}
+          className="flex flex-wrap items-center gap-x-2 gap-y-0.5 leading-relaxed"
+        >
+          <span className="select-none text-slate-500">-</span>
+          <span
+            className={`font-medium ${
+              port.via_gluetun
+                ? "text-cyan-300"
+                : port.host_network
+                  ? "text-indigo-300"
+                  : "text-sky-300"
+            }`}
           >
-            <div className="flex items-center gap-2.5 font-mono">
-              <span
-                className={`min-w-[4.5rem] font-semibold ${
-                  port.via_gluetun
-                    ? "text-cyan-300"
-                    : port.host_network
-                      ? "text-indigo-300"
-                      : "text-sky-300"
-                }`}
-              >
-                :{port.host_port}
-              </span>
-              <span className="text-slate-400">
-                → {port.container_port}/{port.protocol}
-              </span>
-              {port.host_ip !== "0.0.0.0" && (
-                <span className="text-slate-500">({port.host_ip})</span>
-              )}
-              {port.host_network && (
-                <span className="rounded bg-indigo-500/15 px-1.5 py-0.5 font-sans text-[10px] font-medium text-indigo-300 ring-1 ring-indigo-500/30">
-                  host
-                </span>
-              )}
-            </div>
-
-            {port.comment ? (
-              <span className="truncate font-mono text-xs text-slate-300">
-                <span className="mr-1 text-slate-500">#</span>
-                {port.comment}
-              </span>
-            ) : (
-              <span className="text-[11px] text-slate-600">—</span>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
+            {formatComposePort(port)}
+          </span>
+          {port.comment && (
+            <span className="text-slate-400">
+              <span className="mr-1 text-slate-500">#</span>
+              {port.comment}
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
 

@@ -64,8 +64,7 @@ def parse_port_bindings(
     if not raw_ports:
         return []
 
-    bindings: list[PortBinding] = []
-    seen: set[tuple[str, int, int, str]] = set()
+    by_key: dict[tuple[int, int, str], PortBinding] = {}
 
     for container_port_proto, host_entries in raw_ports.items():
         if not host_entries:
@@ -86,29 +85,32 @@ def parse_port_bindings(
             except ValueError:
                 continue
             host_ip = entry.get("HostIp") or "0.0.0.0"
-            dedupe_key = (host_ip, host_port, container_port, protocol)
-            if dedupe_key in seen:
+            dedupe_key = (host_port, container_port, protocol)
+            existing = by_key.get(dedupe_key)
+            # Deduplicate IPv4/IPv6 dual-stack entries (0.0.0.0 & ::) so each port appears once,
+            # preferring IPv4 (0.0.0.0 or explicit IP) over wildcard IPv6 (::).
+            if existing is not None and not (existing.host_ip == "::" and host_ip != "::"):
                 continue
-            seen.add(dedupe_key)
             comment = (
                 compose_hints.get_comment(host_port, protocol)
                 if compose_hints is not None
                 else None
             )
-            bindings.append(
-                PortBinding(
-                    host_ip=host_ip,
-                    host_port=host_port,
-                    container_port=container_port,
-                    protocol=protocol,
-                    container_name=container_name,
-                    stack_name=stack_name,
-                    via_gluetun=via_gluetun,
-                    comment=comment,
-                )
+            by_key[dedupe_key] = PortBinding(
+                host_ip=host_ip,
+                host_port=host_port,
+                container_port=container_port,
+                protocol=protocol,
+                container_name=container_name,
+                stack_name=stack_name,
+                via_gluetun=via_gluetun,
+                comment=comment,
             )
 
-    return sorted(bindings, key=lambda item: (item.host_port, item.protocol, item.host_ip))
+    return sorted(
+        by_key.values(),
+        key=lambda item: (item.host_port, item.protocol, item.host_ip),
+    )
 
 
 def _parse_env_list(raw_env: list[str] | None) -> dict[str, str]:
@@ -340,6 +342,12 @@ def parse_raw_containers(
                 file_hints_cache[compose_file] = load_compose_hints(compose_file)
             hints_for_file = file_hints_cache[compose_file]
             service_hints = hints_for_file.get(service_name or "") or hints_for_file.get(name)
+            if service_hints is None:
+                lowered_hints = {k.lower(): v for k, v in hints_for_file.items()}
+                service_hints = (
+                    lowered_hints.get((service_name or "").lower())
+                    or lowered_hints.get(name.lower())
+                )
 
         state = str(state_obj.get("Status") or "unknown").lower()
         health_obj = state_obj.get("Health")
