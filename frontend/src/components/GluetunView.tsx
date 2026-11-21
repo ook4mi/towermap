@@ -26,7 +26,7 @@ function formatStarted(ts: string | null): string {
 export function GluetunView({ gluetun, isLoading }: GluetunViewProps) {
   if (isLoading || !gluetun) {
     return (
-      <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-12 text-center text-sm text-slate-400">
+      <div className="rounded-xl border border-slate-200 bg-white p-12 text-center text-sm text-slate-500 shadow-xs dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400 dark:shadow-none">
         Loading Gluetun VPN topology...
       </div>
     );
@@ -42,12 +42,12 @@ export function GluetunView({ gluetun, isLoading }: GluetunViewProps) {
     <div className="space-y-5">
       {/* VPN Status Banner */}
       <section
-        className={`rounded-xl border p-5 ${
+        className={`rounded-xl border p-5 shadow-xs dark:shadow-none ${
           isHealthy
             ? "border-emerald-500/30 bg-emerald-500/5"
             : gluetun.warnings.length > 0
               ? "border-amber-500/35 bg-amber-500/5"
-              : "border-slate-800 bg-slate-900/60"
+              : "border-slate-200/90 bg-white dark:border-slate-800 dark:bg-slate-900/60"
         }`}
       >
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -55,10 +55,10 @@ export function GluetunView({ gluetun, isLoading }: GluetunViewProps) {
             <div
               className={`mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl ring-1 ${
                 isHealthy
-                  ? "bg-emerald-500/15 text-emerald-400 ring-emerald-500/30"
+                  ? "bg-emerald-500/15 text-emerald-600 ring-emerald-500/30 dark:text-emerald-400"
                   : gluetun.warnings.length > 0
-                    ? "bg-amber-500/15 text-amber-400 ring-amber-500/30"
-                    : "bg-slate-800 text-slate-400 ring-slate-700"
+                    ? "bg-amber-500/15 text-amber-600 ring-amber-500/30 dark:text-amber-400"
+                    : "bg-slate-100 text-slate-500 ring-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700"
               }`}
             >
               {isHealthy ? (
@@ -71,28 +71,30 @@ export function GluetunView({ gluetun, isLoading }: GluetunViewProps) {
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-base font-semibold text-slate-100">
+                <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
                   Gluetun VPN Gateway
                 </h2>
-                <span className="rounded-md bg-slate-900 px-2 py-0.5 font-mono text-xs text-slate-300 ring-1 ring-slate-700">
+                <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700 ring-1 ring-slate-300 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700">
                   container: {gluetun.container_state}
                 </span>
                 {gluetun.vpn_status && (
                   <span
                     className={`rounded-md px-2 py-0.5 font-mono text-xs ring-1 ${
                       vpnRunning
-                        ? "bg-emerald-500/15 text-emerald-300 ring-emerald-500/30"
-                        : "bg-rose-500/15 text-rose-300 ring-rose-500/30"
+                        ? "bg-emerald-500/10 text-emerald-700 ring-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300"
+                        : "bg-rose-500/10 text-rose-700 ring-rose-500/30 dark:bg-rose-500/15 dark:text-rose-300"
                     }`}
                   >
                     tunnel: {gluetun.vpn_status}
                   </span>
                 )}
               </div>
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
                 {gluetun.attached_containers.length} container(s) share{" "}
-                <span className="font-mono text-cyan-300">network_mode: service:gluetun</span>.
-                Restarting <span className="font-mono">gluetun</span> requires recreating attached
+                <span className="font-mono text-cyan-700 dark:text-cyan-300">
+                  network_mode: service:gluetun
+                </span>
+                . Restarting <span className="font-mono">gluetun</span> requires recreating attached
                 containers.
               </p>
             </div>
@@ -100,12 +102,12 @@ export function GluetunView({ gluetun, isLoading }: GluetunViewProps) {
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <InfoPill
-              icon={<Globe className="h-3.5 w-3.5 text-cyan-400" />}
+              icon={<Globe className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />}
               label="VPN Public IP"
               value={gluetun.public_ip ?? (gluetun.configured ? "Unavailable" : "Not configured")}
             />
             <InfoPill
-              icon={<Shield className="h-3.5 w-3.5 text-sky-400" />}
+              icon={<Shield className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />}
               label="Exit Location"
               value={
                 gluetun.country
@@ -114,7 +116,7 @@ export function GluetunView({ gluetun, isLoading }: GluetunViewProps) {
               }
             />
             <InfoPill
-              icon={<Clock className="h-3.5 w-3.5 text-slate-400" />}
+              icon={<Clock className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />}
               label="Started At"
               value={formatStarted(gluetun.started_at)}
             />
@@ -122,9 +124,11 @@ export function GluetunView({ gluetun, isLoading }: GluetunViewProps) {
         </div>
 
         {gluetun.organization && (
-          <div className="mt-3 text-xs text-slate-400">
+          <div className="mt-3 text-xs text-slate-600 dark:text-slate-400">
             VPN Provider / Org:{" "}
-            <span className="font-mono text-slate-300">{gluetun.organization}</span>
+            <span className="font-mono text-slate-800 dark:text-slate-300">
+              {gluetun.organization}
+            </span>
           </div>
         )}
       </section>
@@ -132,11 +136,11 @@ export function GluetunView({ gluetun, isLoading }: GluetunViewProps) {
       {/* Blast-Radius Warnings */}
       {gluetun.warnings.length > 0 && (
         <section className="rounded-xl border border-amber-500/35 bg-amber-500/10 p-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-amber-200">
-            <AlertTriangle className="h-4 w-4 text-amber-400" />
+          <div className="flex items-center gap-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
+            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
             <span>Blast-Radius &amp; Health Warnings ({gluetun.warnings.length})</span>
           </div>
-          <ul className="mt-2.5 space-y-1.5 pl-6 text-xs text-amber-100/90 list-disc">
+          <ul className="mt-2.5 list-disc space-y-1.5 pl-6 text-xs text-amber-900/90 dark:text-amber-100/90">
             {gluetun.warnings.map((warning, idx) => (
               <li key={idx}>{warning}</li>
             ))}
@@ -147,42 +151,44 @@ export function GluetunView({ gluetun, isLoading }: GluetunViewProps) {
       {/* Topology Grid: Attached Containers & Published Ports */}
       <div className="grid gap-5 lg:grid-cols-2">
         {/* Attached Containers */}
-        <section className="overflow-hidden rounded-xl border border-slate-800/80 bg-slate-900/50">
-          <div className="flex items-center justify-between border-b border-slate-800/80 bg-slate-900/80 px-4 py-3">
+        <section className="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-800/80 dark:bg-slate-900/50 dark:shadow-none">
+          <div className="flex items-center justify-between border-b border-slate-200 bg-slate-100/80 px-4 py-3 dark:border-slate-800/80 dark:bg-slate-900/80">
             <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-cyan-400" />
-              <h3 className="text-sm font-semibold text-slate-100">
+              <Shield className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 Attached Containers ({gluetun.attached_containers.length})
               </h3>
             </div>
-            <span className="font-mono text-xs text-slate-400">
+            <span className="font-mono text-xs text-slate-500 dark:text-slate-400">
               gluetun ({gluetun.container_id ?? "missing"})
             </span>
           </div>
 
           {gluetun.attached_containers.length === 0 ? (
-            <div className="p-8 text-center text-sm text-slate-400">
+            <div className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
               No containers are currently attached to gluetun&apos;s network namespace.
             </div>
           ) : (
-            <div className="divide-y divide-slate-800/70">
+            <div className="divide-y divide-slate-200/80 dark:divide-slate-800/70">
               {gluetun.attached_containers.map((container) => (
                 <div
                   key={container.id}
-                  className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 transition hover:bg-slate-800/25"
+                  className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 transition hover:bg-slate-50 dark:hover:bg-slate-800/25"
                 >
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-sm font-medium text-slate-100">
+                      <span className="font-mono text-sm font-medium text-slate-900 dark:text-slate-100">
                         {container.name}
                       </span>
-                      <ArrowRight className="h-3.5 w-3.5 text-cyan-500/70" />
-                      <span className="font-mono text-xs text-cyan-300">gluetun</span>
+                      <ArrowRight className="h-3.5 w-3.5 text-cyan-600/70 dark:text-cyan-500/70" />
+                      <span className="font-mono text-xs text-cyan-700 dark:text-cyan-300">
+                        gluetun
+                      </span>
                       <span
                         className={`rounded px-2 py-0.5 text-[11px] font-medium ring-1 ${
                           container.state === "running"
-                            ? "bg-emerald-500/15 text-emerald-300 ring-emerald-500/30"
-                            : "bg-rose-500/15 text-rose-300 ring-rose-500/30"
+                            ? "bg-emerald-500/10 text-emerald-700 ring-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300"
+                            : "bg-rose-500/10 text-rose-700 ring-rose-500/30 dark:bg-rose-500/15 dark:text-rose-300"
                         }`}
                       >
                         {container.state}
@@ -191,23 +197,23 @@ export function GluetunView({ gluetun, isLoading }: GluetunViewProps) {
                         <span
                           className={`rounded px-2 py-0.5 text-[11px] font-medium ring-1 ${
                             container.health === "healthy"
-                              ? "bg-emerald-500/10 text-emerald-300 ring-emerald-500/25"
-                              : "bg-rose-500/15 text-rose-300 ring-rose-500/35"
+                              ? "bg-emerald-500/10 text-emerald-700 ring-emerald-500/25 dark:text-emerald-300"
+                              : "bg-rose-500/10 text-rose-700 ring-rose-500/35 dark:bg-rose-500/15 dark:text-rose-300"
                           }`}
                         >
                           {container.health}
                         </span>
                       )}
                     </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 font-mono text-xs text-slate-400">
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 font-mono text-xs text-slate-600 dark:text-slate-400">
                       <span>{container.image}</span>
-                      <span className="text-slate-500">
+                      <span className="text-slate-400 dark:text-slate-500">
                         started: {formatStarted(container.started_at)}
                       </span>
                     </div>
                   </div>
 
-                  <span className="font-mono text-[11px] text-slate-500">
+                  <span className="font-mono text-[11px] text-slate-400 dark:text-slate-500">
                     {container.network_mode.length > 26
                       ? `${container.network_mode.slice(0, 22)}...`
                       : container.network_mode}
@@ -219,34 +225,34 @@ export function GluetunView({ gluetun, isLoading }: GluetunViewProps) {
         </section>
 
         {/* Published Ports on Gluetun */}
-        <section className="overflow-hidden rounded-xl border border-slate-800/80 bg-slate-900/50">
-          <div className="flex items-center justify-between border-b border-slate-800/80 bg-slate-900/80 px-4 py-3">
+        <section className="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-800/80 dark:bg-slate-900/50 dark:shadow-none">
+          <div className="flex items-center justify-between border-b border-slate-200 bg-slate-100/80 px-4 py-3 dark:border-slate-800/80 dark:bg-slate-900/80">
             <div className="flex items-center gap-2">
-              <Network className="h-4 w-4 text-violet-400" />
-              <h3 className="text-sm font-semibold text-slate-100">
+              <Network className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 Exposed Ports ({gluetun.published_ports.length})
               </h3>
             </div>
           </div>
 
           {gluetun.published_ports.length === 0 ? (
-            <div className="p-8 text-center text-sm text-slate-400">
+            <div className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
               No host ports published on gluetun.
             </div>
           ) : (
-            <ul className="divide-y divide-slate-800/60 font-mono text-xs">
+            <ul className="divide-y divide-slate-200/70 font-mono text-xs dark:divide-slate-800/60">
               {deduplicatePorts(gluetun.published_ports).map((port) => (
                 <li
                   key={`${port.host_port}-${port.container_port}-${port.protocol}`}
-                  className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-4 py-2.5 transition hover:bg-slate-800/25"
+                  className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-4 py-2.5 transition hover:bg-slate-50 dark:hover:bg-slate-800/25"
                 >
-                  <span className="select-none text-slate-500">-</span>
-                  <span className="font-semibold text-cyan-300">
+                  <span className="select-none text-slate-400 dark:text-slate-500">-</span>
+                  <span className="font-semibold text-cyan-700 dark:text-cyan-300">
                     {formatComposePort(port)}
                   </span>
                   {port.comment && (
-                    <span className="text-slate-300">
-                      <span className="mr-1 text-slate-500">#</span>
+                    <span className="text-slate-600 dark:text-slate-300">
+                      <span className="mr-1 text-slate-400 dark:text-slate-500">#</span>
                       {port.comment}
                     </span>
                   )}
@@ -270,12 +276,14 @@ function InfoPill({
   value: string;
 }) {
   return (
-    <div className="rounded-lg border border-slate-800/80 bg-slate-950/70 px-3 py-2">
-      <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+    <div className="rounded-lg border border-slate-200/90 bg-white/80 px-3 py-2 dark:border-slate-800/80 dark:bg-slate-950/70">
+      <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
         {icon}
         <span>{label}</span>
       </div>
-      <div className="mt-1 font-mono text-xs font-medium text-slate-100">{value}</div>
+      <div className="mt-1 font-mono text-xs font-medium text-slate-900 dark:text-slate-100">
+        {value}
+      </div>
     </div>
   );
 }

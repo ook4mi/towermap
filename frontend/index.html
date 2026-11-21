@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,8 +9,28 @@
       type="image/svg+xml"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230f172a'/><path d='M8 22h16M10 17h12M12 12h8M15 7h2' stroke='%2338bdf8' stroke-width='2.5' stroke-linecap='round'/></svg>"
     />
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("towermap-theme");
+          var pref =
+            stored === "light" || stored === "dark" || stored === "system"
+              ? stored
+              : "system";
+          var isDark =
+            pref === "dark" ||
+            (pref === "system" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          var root = document.documentElement;
+          root.classList.toggle("dark", isDark);
+          root.style.colorScheme = isDark ? "dark" : "light";
+        } catch (e) {
+          // Ignore storage access errors (e.g. strict privacy modes)
+        }
+      })();
+    </script>
   </head>
-  <body class="bg-slate-950 text-slate-100 antialiased selection:bg-sky-500/30 selection:text-sky-200">
+  <body class="bg-slate-50 text-slate-900 antialiased selection:bg-sky-500/25 selection:text-sky-900 dark:bg-slate-950 dark:text-slate-100 dark:selection:bg-sky-500/30 dark:selection:text-sky-200">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

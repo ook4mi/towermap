@@ -80,21 +80,25 @@ export function PortsView({ ports, isLoading }: PortsViewProps) {
   return (
     <div className="space-y-5">
       {/* Interactive Port Availability Checker */}
-      <section className="rounded-xl border border-slate-800/80 bg-slate-900/70 p-5">
+      <section className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800/80 dark:bg-slate-900/70 dark:shadow-none">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-base font-semibold text-slate-100">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
               Is Port X Free?
             </h2>
-            <p className="mt-0.5 text-xs text-slate-400">
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
               Check host port availability before deploying a new Compose stack (including
-              ports bound indirectly via <span className="font-mono text-cyan-300">gluetun</span>).
+              ports bound indirectly via{" "}
+              <span className="font-mono text-cyan-700 dark:text-cyan-300">gluetun</span>).
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
-              <label htmlFor="port-check-input" className="text-xs font-medium text-slate-400">
+              <label
+                htmlFor="port-check-input"
+                className="text-xs font-medium text-slate-600 dark:text-slate-400"
+              >
                 Port
               </label>
               <input
@@ -104,7 +108,7 @@ export function PortsView({ ports, isLoading }: PortsViewProps) {
                 max={65535}
                 value={portInput}
                 onChange={(e) => setPortInput(e.target.value)}
-                className="w-28 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+                className="w-28 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 font-mono text-sm text-slate-900 focus:border-sky-500 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:bg-slate-950"
                 placeholder="4010"
               />
             </div>
@@ -113,7 +117,7 @@ export function PortsView({ ports, isLoading }: PortsViewProps) {
               <button
                 type="button"
                 onClick={() => setPortInput(String(portCheck.next_free_port))}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500/15 px-3 py-2 text-xs font-medium text-sky-300 ring-1 ring-sky-500/30 transition hover:bg-sky-500/25"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500/15 px-3 py-2 text-xs font-medium text-sky-700 ring-1 ring-sky-500/30 transition hover:bg-sky-500/25 dark:text-sky-300"
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 <span>
@@ -128,27 +132,27 @@ export function PortsView({ ports, isLoading }: PortsViewProps) {
         {/* Verdict Banner */}
         <div className="mt-4">
           {parsedPort === null ? (
-            <div className="rounded-lg border border-slate-800 bg-slate-950/70 px-4 py-3 text-xs text-slate-400">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-400">
               Enter a valid TCP/UDP port number between <span className="font-mono">1</span> and{" "}
               <span className="font-mono">65535</span>.
             </div>
           ) : checkingPort && !portCheck ? (
-            <div className="rounded-lg border border-slate-800 bg-slate-950/70 px-4 py-3 text-xs text-slate-400">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-400">
               Checking port {parsedPort}...
             </div>
           ) : portCheck ? (
             portCheck.available ? (
-              <div className="flex items-center gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+              <div className="flex items-center gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-200">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
                 <span>
                   Port <strong className="font-mono">:{portCheck.port}</strong> is{" "}
                   <strong>available</strong> on <span className="font-mono">tower</span>.
                 </span>
               </div>
             ) : (
-              <div className="flex flex-col gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+              <div className="flex flex-col gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-800 dark:text-rose-200">
                 <div className="flex items-center gap-2.5">
-                  <XCircle className="h-4 w-4 shrink-0 text-rose-400" />
+                  <XCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
                   <span>
                     Port <strong className="font-mono">:{portCheck.port}</strong> is already bound
                     by {portCheck.conflicts.length}{" "}
@@ -159,7 +163,7 @@ export function PortsView({ ports, isLoading }: PortsViewProps) {
                   {portCheck.conflicts.map((conflict) => (
                     <span
                       key={`${conflict.host_ip}-${conflict.protocol}-${conflict.container_name}`}
-                      className="rounded-md bg-rose-950/80 px-2.5 py-1 font-mono text-xs text-rose-200 ring-1 ring-rose-500/30"
+                      className="rounded-md bg-rose-100 px-2.5 py-1 font-mono text-xs text-rose-800 ring-1 ring-rose-500/30 dark:bg-rose-950/80 dark:text-rose-200"
                     >
                       {conflict.container_name} ({conflict.stack_name ?? "standalone"}) ·{" "}
                       {conflict.host_ip}:{conflict.host_port}→{conflict.container_port}/
@@ -175,15 +179,15 @@ export function PortsView({ ports, isLoading }: PortsViewProps) {
       </section>
 
       {/* Filter Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-800/80 bg-slate-900/60 p-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-xs dark:border-slate-800/80 dark:bg-slate-900/60 dark:shadow-none">
         <div className="relative min-w-[240px] flex-1">
-          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
+          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Filter ports by number, container, stack, IP, or comment..."
-            className="w-full rounded-lg border border-slate-700/80 bg-slate-950 py-2 pr-3 pl-9 text-sm text-slate-100 placeholder-slate-500 focus:border-sky-500 focus:outline-none"
+            className="w-full rounded-lg border border-slate-300 bg-slate-50 py-2 pr-3 pl-9 text-sm text-slate-900 placeholder-slate-400 focus:border-sky-500 focus:bg-white focus:outline-none dark:border-slate-700/80 dark:bg-slate-950 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:bg-slate-950"
           />
         </div>
 
@@ -195,8 +199,8 @@ export function PortsView({ ports, isLoading }: PortsViewProps) {
               onClick={() => setProtocolFilter(proto)}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium uppercase transition ${
                 protocolFilter === proto
-                  ? "bg-sky-500/20 text-sky-300 ring-1 ring-sky-500/40"
-                  : "bg-slate-950 text-slate-400 ring-1 ring-slate-800 hover:text-slate-200"
+                  ? "bg-sky-500/15 text-sky-700 ring-1 ring-sky-500/40 dark:bg-sky-500/20 dark:text-sky-300"
+                  : "bg-slate-100 text-slate-600 ring-1 ring-slate-200 hover:text-slate-900 dark:bg-slate-950 dark:text-slate-400 dark:ring-slate-800 dark:hover:text-slate-200"
               }`}
             >
               {proto}
@@ -209,8 +213,8 @@ export function PortsView({ ports, isLoading }: PortsViewProps) {
             }
             className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
               routingFilter === "gluetun"
-                ? "bg-cyan-500/20 text-cyan-300 ring-1 ring-cyan-500/40"
-                : "bg-slate-950 text-slate-400 ring-1 ring-slate-800 hover:text-slate-200"
+                ? "bg-cyan-500/15 text-cyan-700 ring-1 ring-cyan-500/40 dark:bg-cyan-500/20 dark:text-cyan-300"
+                : "bg-slate-100 text-slate-600 ring-1 ring-slate-200 hover:text-slate-900 dark:bg-slate-950 dark:text-slate-400 dark:ring-slate-800 dark:hover:text-slate-200"
             }`}
           >
             <Shield className="h-3.5 w-3.5" />
@@ -223,8 +227,8 @@ export function PortsView({ ports, isLoading }: PortsViewProps) {
             }
             className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
               routingFilter === "host"
-                ? "bg-indigo-500/20 text-indigo-300 ring-1 ring-indigo-500/40"
-                : "bg-slate-950 text-slate-400 ring-1 ring-slate-800 hover:text-slate-200"
+                ? "bg-indigo-500/15 text-indigo-700 ring-1 ring-indigo-500/40 dark:bg-indigo-500/20 dark:text-indigo-300"
+                : "bg-slate-100 text-slate-600 ring-1 ring-slate-200 hover:text-slate-900 dark:bg-slate-950 dark:text-slate-400 dark:ring-slate-800 dark:hover:text-slate-200"
             }`}
           >
             <Network className="h-3.5 w-3.5" />
@@ -234,19 +238,19 @@ export function PortsView({ ports, isLoading }: PortsViewProps) {
       </div>
 
       {/* Port Registry Table */}
-      <div className="overflow-hidden rounded-xl border border-slate-800/80 bg-slate-900/50">
+      <div className="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-800/80 dark:bg-slate-900/50 dark:shadow-none">
         {isLoading ? (
-          <div className="p-10 text-center text-sm text-slate-400">
+          <div className="p-10 text-center text-sm text-slate-500 dark:text-slate-400">
             Loading port registry...
           </div>
         ) : filteredPorts.length === 0 ? (
-          <div className="p-10 text-center text-sm text-slate-400">
+          <div className="p-10 text-center text-sm text-slate-500 dark:text-slate-400">
             No bound ports match the current filter.
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-800/80 text-left text-sm">
-              <thead className="bg-slate-900/90 text-xs uppercase tracking-wider text-slate-400">
+            <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-800/80">
+              <thead className="bg-slate-100/80 text-xs uppercase tracking-wider text-slate-600 dark:bg-slate-900/90 dark:text-slate-400">
                 <tr>
                   <SortableTh
                     label="Host Port"
@@ -274,55 +278,55 @@ export function PortsView({ ports, isLoading }: PortsViewProps) {
                   <th className="px-4 py-3 font-medium">Comment</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800/60">
                 {filteredPorts.map((binding) => (
                   <tr
                     key={`${binding.host_ip}-${binding.host_port}-${binding.protocol}-${binding.container_name}`}
-                    className="transition hover:bg-slate-800/30"
+                    className="transition hover:bg-slate-50 dark:hover:bg-slate-800/30"
                   >
-                    <td className="px-4 py-3 font-mono font-semibold text-sky-300">
+                    <td className="px-4 py-3 font-mono font-semibold text-sky-700 dark:text-sky-300">
                       :{binding.host_port}
                     </td>
-                    <td className="px-4 py-3 font-mono text-slate-300">
+                    <td className="px-4 py-3 font-mono text-slate-700 dark:text-slate-300">
                       {binding.container_port}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="rounded bg-slate-800 px-2 py-0.5 font-mono text-xs uppercase text-slate-300">
+                      <span className="rounded bg-slate-200/80 px-2 py-0.5 font-mono text-xs uppercase text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                         {binding.protocol}
                       </span>
                     </td>
-                    <td className="px-4 py-3 font-mono text-slate-100">
+                    <td className="px-4 py-3 font-mono text-slate-900 dark:text-slate-100">
                       {binding.container_name}
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-slate-400">
+                    <td className="px-4 py-3 font-mono text-xs text-slate-600 dark:text-slate-400">
                       {binding.stack_name ?? "standalone"}
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-slate-400">
+                    <td className="px-4 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">
                       {binding.host_ip}
                     </td>
                     <td className="px-4 py-3">
                       {binding.via_gluetun ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-cyan-500/15 px-2 py-0.5 text-xs font-medium text-cyan-300 ring-1 ring-cyan-500/30">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-cyan-500/10 px-2 py-0.5 text-xs font-medium text-cyan-700 ring-1 ring-cyan-500/30 dark:bg-cyan-500/15 dark:text-cyan-300">
                           <Shield className="h-3 w-3" />
                           via gluetun
                         </span>
                       ) : binding.host_network ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-300 ring-1 ring-indigo-500/30">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-700 ring-1 ring-indigo-500/30 dark:bg-indigo-500/15 dark:text-indigo-300">
                           <Network className="h-3 w-3" />
                           host network
                         </span>
                       ) : (
-                        <span className="text-xs text-slate-500">direct</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500">direct</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-slate-300">
+                    <td className="px-4 py-3 font-mono text-xs text-slate-700 dark:text-slate-300">
                       {binding.comment ? (
                         <span>
-                          <span className="mr-1 text-slate-500">#</span>
+                          <span className="mr-1 text-slate-400 dark:text-slate-500">#</span>
                           {binding.comment}
                         </span>
                       ) : (
-                        <span className="text-slate-600">—</span>
+                        <span className="text-slate-400 dark:text-slate-600">—</span>
                       )}
                     </td>
                   </tr>
@@ -350,8 +354,10 @@ function SortableTh({
       <button
         type="button"
         onClick={onClick}
-        className={`inline-flex items-center gap-1 uppercase transition hover:text-slate-200 ${
-          active ? "text-sky-300" : "text-slate-400"
+        className={`inline-flex items-center gap-1 uppercase transition hover:text-slate-900 dark:hover:text-slate-200 ${
+          active
+            ? "text-sky-700 dark:text-sky-300"
+            : "text-slate-600 dark:text-slate-400"
         }`}
       >
         <span>{label}</span>
